@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Basic Emulator</title>
+
+<style>
+  html, body { margin: 0; background: #0b0c0b; }
+  #crt { width: min(100vw, calc(100vh * 1160 / 812)); margin: 0 auto; }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "v86": "/v86/build/libv86.mjs",
+    "cool-retro-term-renderer": "/v86/cool-retro-term-webgl/modules/cool-retro-term-renderer/dist/index.js",
+    "three": "/v86/cool-retro-term-webgl/node_modules/three/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import { V86 } from "v86";
+import { attach } from "/v86/v86-crt.js";
+import { PROFILES, applyProfile } from "/v86/crt-profiles.js";
+
+const emulator = window.emulator = new V86({
+    wasm_path: "/v86/build/v86.wasm",
+    memory_size: 32 * 1024 * 1024,
+    vga_memory_size: 2 * 1024 * 1024,
+    screen_container: document.getElementById("screen_container"),
+    bios: { url: "/v86/bios/seabios.bin" },
+    vga_bios: { url: "/v86/bios/vgabios.bin" },
+    fda: { url: "/v86/images/freedos722.img" },
+    autostart: true,
+});
+
+//window.crt = attach(emulator, { container: "#crt" });
+window.crt = attach(emulator, { container: "#crt", graphics: "crt" }); // Graphics like GUI go through crt as well.
+
+const names = Object.keys(PROFILES);
+//const label = document.getElementById("profile-name");
+let current = 0;
+
+function showProfile()
+{
+    const name = names[current];
+    applyProfile(crt.text, PROFILES[name], { fonts: "./fonts/" });
+    //label.textContent = name;
+    current = (current + 1) % names.length;
+    console.log(names[current]);
+}
+
+showProfile();
+setInterval(showProfile, 5000);
+</script>
+
+<div id="crt"></div>
+
+<!-- v86's own screen: still required. The linker hides it in text mode
+     and shows it in graphics mode. -->
+<div id="screen_container">
+    <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+    <canvas style="display: none"></canvas>
+</div>
